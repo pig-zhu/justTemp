@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>跨平台兼容录音</title>
+  <style>
+    .record-btn {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #ff4d4f;
+      border: none;
+      color: white;
+      font-size: 16px;
+      margin: 50px auto;
+      display: block;
+      touch-action: manipulation; /* 禁止触摸默认行为（如缩放） */
+      -webkit-tap-highlight-color: transparent; /* 去除iOS点击高亮 */
+    }
+    .record-btn.recording {
+      background: #ff7875;
+      transform: scale(0.95);
+      transition: all 0.2s;
+    }
+    .status {
+      text-align: center;
+      color: #333;
+      font-size: 16px;
+      margin: 20px 10px;
+      line-height: 1.5;
+    }
+    .tips {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    audio {
+      display: block;
+      margin: 20px auto;
+      width: 90%;
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body>
+  <button class="record-btn">按住录音</button>
+  <div class="status">请按住按钮开始录音</div>
+  <div class="tips">支持Chrome、Safari、微信浏览器</div>
+  <audio id="audioPlayer" controls style="display: none;"></audio>
+
+  <script>
+    const recordBtn = document.querySelector('.record-btn');
+    const statusEl = document.querySelector('.status');
+    const audioPlayer = document.getElementById('audioPlayer');
+
+    let mediaRecorder;
+    let mediaStream;
+    let audioBlob;
+    let isRecording = false; // 标记是否正在录音（避免重复触发）
+
+    // 检测浏览器支持的音频格式
+    function getSupportedMimeType() {
+      const types = [
+        'audio/mp4', // iOS Safari 优先支持
+        'audio/webm', // 多数浏览器支持
+        'audio/wav' // 兼容性好但体积大
+      ];
+      for (const type of types) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          return type;
+        }
+      }
+      return ''; // 不支持MediaRecorder
+    }
+
+    // 开始录音
+    async function startRecording() {
+      if (isRecording) return; // 防止重复开始
+      isRecording = true;
+
+      try {
+        // 1. 请求麦克风权限（必须在用户交互中触发）
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true, // 开启回声消除（提升体验）
+            noiseSuppression: true, // 降噪
+            sampleRate: 44100 // 通用采样率
+          }
+        });
+
+        // 2. 检测支持的格式
+        const mimeType = getSupportedMimeType();
+        if (!mimeType) {
+          throw new Error('当前浏览器不支持录音功能');
+        }
+
+        // 3. 创建录音实例
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+        mediaRecorder.start();
+
+        // 4. 更新UI
+        recordBtn.classList.add('recording');
+        recordBtn.textContent = '松开结束';
+        statusEl.textContent = '正在录音...';
+
+      } catch (err) {
+        console.error('录音失败:', err);
+        // 针对iOS权限拒绝的提示
+        if (err.name === 'NotAllowedError') {
+          statusEl.textContent = '请在浏览器设置中允许麦克风权限（设置 > 隐私与安全性 > 麦克风）';
+        } else {
+          statusEl.textContent = '录音失败：' + err.message;
+        }
+        stopRecording(); // 清理状态
+      }
+    }
+
+    // 结束录音
+    function stopRecording() {
+      if (!isRecording) return; // 防止重复停止
+      isRecording = false;
+
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        // 录音完成后处理
+        mediaRecorder.addEventListener('dataavailable', (e) => {
+          audioBlob = e.data;
+          // 生成可播放的URL
+          const audioUrl = URL.createObjectURL(audioBlob);
+          audioPlayer.src = audioUrl;
+          audioPlayer.style.display = 'block';
+          statusEl.textContent = '录音完成，可播放或上传';
+        }, { once: true }); // 确保只执行一次
+
+        // 释放麦克风资源（关键：避免占用设备）
+        mediaStream?.getTracks().forEach(track => {
+          track.stop();
+        });
+      }
+
+      // 重置UI
+      recordBtn.classList.remove('recording');
+      recordBtn.textContent = '按住录音';
+    }
+
+    // 绑定事件（统一处理触摸和鼠标事件）
+    function bindEvents() {
+      // 触摸事件（移动端）
+      recordBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // 阻止触摸时的滚动/选中
+        startRecording();
+      }, { passive: false }); // 允许preventDefault
+
+      recordBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        stopRecording();
+      });
+
+      recordBtn.addEventListener('touchcancel', () => {
+        // 触摸被中断（如来电、滑动离开）
+        stopRecording();
+        statusEl.textContent = '录音已取消';
+      });
+
+      // 鼠标事件（PC端）
+      recordBtn.addEventListener('mousedown', startRecording);
+      recordBtn.addEventListener('mouseup', stopRecording);
+      recordBtn.addEventListener('mouseleave', () => {
+        // 鼠标移出按钮时停止
+        if (isRecording) {
+          stopRecording();
+          statusEl.textContent = '录音已取消（鼠标移出）';
+        }
+      });
+    }
+
+    // 初始化
+    function init() {
+      // 检测浏览器是否支持核心API
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusEl.textContent = '当前浏览器不支持录音功能（请升级浏览器）';
+        recordBtn.disabled = true;
+        return;
+      }
+      bindEvents();
+    }
+
+    init();
+  </script>
+</body>
+</html>
