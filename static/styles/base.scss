@@ -1,0 +1,102 @@
+.text-primary {
+	color: #409EFF;	
+}
+.text-orange {
+	color: #FF6700;	
+}
+.text-success {
+	color: #67C23A;	
+}
+.text-warning {
+	color: #E6A23C;	
+}
+.text-danger {
+	color: #F56C6C;	
+}
+.text-black {
+	color: #666;	
+}
+.text-info {
+	color: #7f7f7f;	
+}
+.text-lightGray {
+	color: #d7d7d7;	
+}
+// 一级标题文字颜色
+.text-title-o {
+	color: #333;
+}
+// 二级标题文字颜色
+.text-title-t {
+	color: #666;
+}
+// 三级标题文字颜色
+.text-title-s {
+	color: #999;
+}
+// 四级标题文字颜色
+.text-title-f {
+	color: #ccc;
+}
+.text-white {
+	color: #fff;
+}
+.bg-primary {
+	background-color: #409EFF;
+}
+.bg-orange {
+	background-color: #FF6700;	
+}
+.bg-success {
+	background-color: #67C23A;
+}
+.bg-warning {
+	background-color: #E6A23C;
+}
+.bg-danger {
+	background-color: #F56C6C;
+}
+.bg-black {
+	background-color: #666;
+}
+.bg-info {
+	background-color: #7f7f7f;
+}
+.bg-lightGray {
+	background-color: #d7d7d7;
+}
+.bg-white {
+	background-color: #fff;
+}
+.bg-gray {
+	background-color: #F6F6F6;
+}
+.bg-transparent {
+	background: transparent;
+}
+.fs-mm {
+	font-size: 20rpx;
+}
+.fs-xs {
+	font-size: 24rpx;
+}
+.fs-sm {
+	font-size: 28rpx;
+}
+.fs-base {
+	font-size: 32rpx;
+}
+.fs-lg {
+	font-size: 36rpx;
+}
+.fs-xl {
+	font-size: 40rpx;
+}
+
+.m-center {
+	margin: 0 auto;
+}
+// :style="{ fontSize: fontXs }"24
+// :style="{ fontSize: fontSm }"28
+// :style="{ fontSize: fontLg }"32
+// :style="{ fontSize: fontXl }"48
